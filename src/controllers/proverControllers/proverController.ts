@@ -38,6 +38,7 @@ dotenv.config();
 type createAskAndGetProofParams = {
   pub: any;
   sec: any;
+  feeAuth: any;
 };
 
 const createAskAndGetProof = async (
@@ -187,10 +188,12 @@ export const getVersion = async (req: any, res: any) => {
 export const proveTransaction = async (req: any, res: any) => {
   try {
     let public_input = req.body?.public;
-    let secret_input = req.body?.secret;
+    let secret_input = req.body?.auth;
+    let fee_auth_obj = req.body?.fee_auth;
     let proof = await createAskAndGetProof({
       pub: public_input,
       sec: secret_input,
+      feeAuth: fee_auth_obj,
     });
     res.status(200).send(proof);
   } catch (error) {
