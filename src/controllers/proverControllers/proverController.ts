@@ -1,3 +1,4 @@
+import Redis from "ioredis";
 import { KalypsoSdk } from "kalypso-sdk";
 import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
@@ -38,7 +39,6 @@ dotenv.config();
 type createAskAndGetProofParams = {
   pub: any;
   sec: any;
-  feeAuth: any;
 };
 
 const createAskAndGetProof = async (
@@ -184,19 +184,91 @@ export const getVersion = async (req: any, res: any) => {
   }
 };
 
-//Generate Proof for the public and secret input
+// Initialize Redis client using environment variables
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: parseInt(process.env.REDIS_PORT || "6379"),
+  password: process.env.REDIS_PASSWORD,
+});
+
+console.log("Redis running on port: ", process.env.REDIS_PORT)
+
+// Fetching environment variables for Rate Limiting
+const rateLimitWindowSeconds = parseInt(process.env.RATE_LIMIT_WINDOW || '3600', 10); // 1 hour in seconds
+const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || '10', 10); // Max requests per window
+const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || '10', 10); // Delay between requests in seconds
+
+// Rate Limiting and Throttling Middleware
+const checkRateLimitAndThrottle = async (signer: string) => {
+  const currentTime = Date.now();
+  const rateLimitKey = `rateLimit:${signer}`;
+  const lastRequestKey = `lastRequest:${signer}`;
+
+  // Rate Limiting
+  const rateLimitData = await redisClient.hgetall(rateLimitKey);
+  let requestCount = parseInt(rateLimitData.count || '0');
+  let windowStart = parseInt(rateLimitData.windowStart || currentTime.toString());
+
+  if (currentTime - windowStart > rateLimitWindowSeconds * 1000) { // Convert seconds to milliseconds
+    windowStart = currentTime;
+    requestCount = 0;
+  }
+
+  if (requestCount >= maxRequestsPerWindow) {
+    throw new Error('Too many requests. Please try again later.');
+  }
+
+  await redisClient.hmset(rateLimitKey, {
+    count: requestCount + 1,
+    windowStart: windowStart.toString(),
+  });
+
+  // Request Throttling
+  const lastRequestTime = await redisClient.get(lastRequestKey);
+  if (lastRequestTime && (currentTime - parseInt(lastRequestTime)) < throttleDelaySeconds * 1000) { // Convert seconds to milliseconds
+    throw new Error('Too many requests in a short time. Please wait a moment.');
+  }
+
+  await redisClient.set(lastRequestKey, currentTime.toString());
+};
+
+// Generate Proof for the public and secret input
 export const proveTransaction = async (req: any, res: any) => {
   try {
-    let public_input = req.body?.public;
-    let secret_input = req.body?.auth;
-    let fee_auth_obj = req.body?.fee_auth;
-    let proof = await createAskAndGetProof({
-      pub: public_input,
-      sec: secret_input,
-      feeAuth: fee_auth_obj,
+    const signer = req.body?.secret?.auth?.requests?.[0]?.signer;
+    if (!signer) {
+      return res.status(400).send('Signer is required.');
+    }
+
+    // Check rate limits and throttle requests
+    await checkRateLimitAndThrottle(signer);
+
+    const publicInput = req.body?.public;
+    const secretInput = req.body?.secret;
+
+    if (!publicInput || !secretInput) {
+      return res.status(400).send('Invalid input.');
+    }
+
+    const proof = await createAskAndGetProof({
+      pub: publicInput,
+      sec: secretInput,
     });
+
     res.status(200).send(proof);
   } catch (error) {
-    console.log(error);
+    // Error handling
+    if (error instanceof Error) {
+      console.error('Error:', error.message);
+      if (error.message === 'Too many requests. Please try again later.' || error.message === 'Too many requests in a short time. Please wait a moment.') {
+        res.status(429).send(error.message);
+      } else {
+        res.status(500).send('Internal Server Error');
+      }
+    } else {
+      // Handle non-Error types
+      console.error('Unexpected error:', error);
+      res.status(500).send('Internal Server Error');
+    }
   }
 };
