@@ -193,42 +193,42 @@ const redisClient = new Redis({
 
 console.log("Redis running on port: ", process.env.REDIS_PORT)
 
-// Fetching environment variables for Rate Limiting
+// Fetching parameters for Rate Limiting
 const rateLimitWindowSeconds = parseInt(process.env.RATE_LIMIT_WINDOW || '3600', 10); // 1 hour in seconds
 const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || '10', 10); // Max requests per window
 const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || '10', 10); // Delay between requests in seconds
 
-// Rate Limiting and Throttling Middleware
+// Rate Limiting and Throttling
 const checkRateLimitAndThrottle = async (signer: string) => {
   const currentTime = Date.now();
   const rateLimitKey = `rateLimit:${signer}`;
   const lastRequestKey = `lastRequest:${signer}`;
 
-  // Rate Limiting
+  // Request Throttling: Check if the last request was made within the throttle delay
+  const lastRequestTime = await redisClient.get(lastRequestKey);
+  if (lastRequestTime && (currentTime - parseInt(lastRequestTime)) < throttleDelaySeconds * 1000) {
+    throw new Error('You are sending requests too quickly. Please wait for few seconds and try again.');
+  }
+
+  // Rate Limiting: Check the request count within the time window
   const rateLimitData = await redisClient.hgetall(rateLimitKey);
   let requestCount = parseInt(rateLimitData.count || '0');
-  let windowStart = parseInt(rateLimitData.windowStart || currentTime.toString());
-
-  if (currentTime - windowStart > rateLimitWindowSeconds * 1000) { // Convert seconds to milliseconds
-    windowStart = currentTime;
-    requestCount = 0;
-  }
 
   if (requestCount >= maxRequestsPerWindow) {
-    throw new Error('Too many requests. Please try again later.');
+    throw new Error('You have exceeded the number of allowed requests per hour. Please try again later.');
   }
 
+  // Increment the request count since this request is valid
   await redisClient.hmset(rateLimitKey, {
     count: requestCount + 1,
-    windowStart: windowStart.toString(),
   });
 
-  // Request Throttling
-  const lastRequestTime = await redisClient.get(lastRequestKey);
-  if (lastRequestTime && (currentTime - parseInt(lastRequestTime)) < throttleDelaySeconds * 1000) { // Convert seconds to milliseconds
-    throw new Error('Too many requests in a short time. Please wait a moment.');
+  // Set the expiration time (TTL) only if the key is new
+  if (requestCount === 0) {
+    await redisClient.expire(rateLimitKey, rateLimitWindowSeconds);
   }
 
+  // Update the last request time after all checks pass
   await redisClient.set(lastRequestKey, currentTime.toString());
 };
 
@@ -260,7 +260,8 @@ export const proveTransaction = async (req: any, res: any) => {
     // Error handling
     if (error instanceof Error) {
       console.error('Error:', error.message);
-      if (error.message === 'Too many requests. Please try again later.' || error.message === 'Too many requests in a short time. Please wait a moment.') {
+      if (error.message === 'You are sending requests too quickly. Please wait for few seconds and try again.' ||
+        error.message === 'You have exceeded the number of allowed requests per hour. Please try again later.') {
         res.status(429).send(error.message);
       } else {
         res.status(500).send('Internal Server Error');
