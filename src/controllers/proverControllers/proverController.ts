@@ -184,11 +184,31 @@ export const getVersion = async (req: any, res: any) => {
   }
 };
 
-// Initialize Redis client using environment variables
 const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
+  host: (() => {
+    if (!process.env.REDIS_HOST) {
+      throw new Error(
+        "REDIS_HOST not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return process.env.REDIS_HOST;
+  })(),
+  port: (() => {
+    if (!process.env.REDIS_PORT) {
+      throw new Error(
+        "REDIS_PORT not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return parseInt(process.env.REDIS_PORT, 10);
+  })(),
+  password: (() => {
+    if (!process.env.REDIS_PASSWORD) {
+      throw new Error(
+        "REDIS_PASSWORD not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return process.env.REDIS_PASSWORD;
+  })(),
 });
 
 console.log("Redis running on port: ", process.env.REDIS_PORT)
