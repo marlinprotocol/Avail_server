@@ -1,3 +1,4 @@
+import Redis from "ioredis";
 import { KalypsoSdk } from "kalypso-sdk";
 import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
@@ -183,17 +184,112 @@ export const getVersion = async (req: any, res: any) => {
   }
 };
 
-//Generate Proof for the public and secret input
+const redisClient = new Redis({
+  host: (() => {
+    if (!process.env.REDIS_HOST) {
+      throw new Error(
+        "REDIS_HOST not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return process.env.REDIS_HOST;
+  })(),
+  port: (() => {
+    if (!process.env.REDIS_PORT) {
+      throw new Error(
+        "REDIS_PORT not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return parseInt(process.env.REDIS_PORT, 10);
+  })(),
+  password: (() => {
+    if (!process.env.REDIS_PASSWORD) {
+      throw new Error(
+        "REDIS_PASSWORD not found in the .env file. Please make sure to set up environment variables in your project."
+      );
+    }
+    return process.env.REDIS_PASSWORD;
+  })(),
+});
+
+console.log("Redis running on port: ", process.env.REDIS_PORT)
+
+// Fetching parameters for Rate Limiting
+const rateLimitWindowSeconds = parseInt(process.env.RATE_LIMIT_WINDOW || '3600', 10); // 1 hour in seconds
+const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || '10', 10); // Max requests per window
+const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || '10', 10); // Delay between requests in seconds
+
+// Rate Limiting and Throttling
+const checkRateLimitAndThrottle = async (signer: string) => {
+  const currentTime = Date.now();
+  const rateLimitKey = `rateLimit:${signer}`;
+  const lastRequestKey = `lastRequest:${signer}`;
+
+  // Request Throttling: Check if the last request was made within the throttle delay
+  const lastRequestTime = await redisClient.get(lastRequestKey);
+  if (lastRequestTime && (currentTime - parseInt(lastRequestTime)) < throttleDelaySeconds * 1000) {
+    throw new Error('You are sending requests too quickly. Please wait for few seconds and try again.');
+  }
+
+  // Rate Limiting: Check the request count within the time window
+  const rateLimitData = await redisClient.hgetall(rateLimitKey);
+  let requestCount = parseInt(rateLimitData.count || '0');
+
+  if (requestCount >= maxRequestsPerWindow) {
+    throw new Error('You have exceeded the number of allowed requests per hour. Please try again later.');
+  }
+
+  // Increment the request count since this request is valid
+  await redisClient.hmset(rateLimitKey, {
+    count: requestCount + 1,
+  });
+
+  // Set the expiration time (TTL) only if the key is new
+  if (requestCount === 0) {
+    await redisClient.expire(rateLimitKey, rateLimitWindowSeconds);
+  }
+
+  // Update the last request time after all checks pass
+  await redisClient.set(lastRequestKey, currentTime.toString());
+};
+
+// Generate Proof for the public and secret input
 export const proveTransaction = async (req: any, res: any) => {
   try {
-    let public_input = req.body?.public;
-    let secret_input = req.body?.secret;
-    let proof = await createAskAndGetProof({
-      pub: public_input,
-      sec: secret_input,
+    const signer = req.body?.secret?.auth?.requests?.[0]?.signer;
+    if (!signer) {
+      return res.status(400).send('Signer is required.');
+    }
+
+    // Check rate limits and throttle requests
+    await checkRateLimitAndThrottle(signer);
+
+    const publicInput = req.body?.public;
+    const secretInput = req.body?.secret;
+
+    if (!publicInput || !secretInput) {
+      return res.status(400).send('Invalid input.');
+    }
+
+    const proof = await createAskAndGetProof({
+      pub: publicInput,
+      sec: secretInput,
     });
+
     res.status(200).send(proof);
   } catch (error) {
-    console.log(error);
+    // Error handling
+    if (error instanceof Error) {
+      console.error('Error:', error.message);
+      if (error.message === 'You are sending requests too quickly. Please wait for few seconds and try again.' ||
+        error.message === 'You have exceeded the number of allowed requests per hour. Please try again later.') {
+        res.status(429).send(error.message);
+      } else {
+        res.status(500).send('Internal Server Error');
+      }
+    } else {
+      // Handle non-Error types
+      console.error('Unexpected error:', error);
+      res.status(500).send('Internal Server Error');
+    }
   }
 };

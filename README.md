@@ -3,6 +3,7 @@
 ##### .env file :
 
 ```
+# Utils
 RPC=https://arb-sepolia.g.alchemy.com/v2/****
 PRIVATE_KEY=***********fcedffecda5c639568a869e90
 PORT=3030
@@ -10,6 +11,16 @@ API_KEY=$2a$12$pDBhELXDyqW3CQj9PUvTTuITUjNAn61Y7UNlrWfcmrbJZfwko7Dxu
 SERVER_MODE=DEV  #There are two options, DEV and PROD, using PROD enables API key authentication.
 PROOF_REWARD=14500000000000000000
 MARKET_ID=19 #Market used for avail proof generation
+
+# Redis configuration
+REDIS_HOST=127.0.0.1         # localhost
+REDIS_PORT=6379              # default port
+REDIS_PASSWORD=password
+
+# Rate Limiting and Throttling
+RATE_LIMIT_WINDOW=3600            # 1 hour in seconds
+MAX_REQUESTS=10                   # Max requests per window
+THROTTLE_DELAY=10                 # 10 seconds delay between requests
 ```
 
 `Note : If (PROD) SERVER_MODE is provided, please provide a (api-key) in the request headers.`
