@@ -34,8 +34,6 @@ npm start
 
 #### Creating ask and getting execution
 
-#### For public authorization
-
 ##### Method: POST
 
 ```
