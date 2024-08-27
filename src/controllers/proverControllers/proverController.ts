@@ -3,6 +3,7 @@ import { KalypsoSdk } from "kalypso-sdk";
 import { ethers } from "ethers";
 import BigNumber from "bignumber.js";
 import dotenv from "dotenv";
+import { PublicAndSecretInputPair } from "kalypso-sdk/dist/types";
 
 const kalypsoConfig = {
   payment_token: "0x01d84D33CC8636F83d2bb771e184cE57d8356863",
@@ -18,20 +19,8 @@ const kalypsoConfig = {
   priority_list: "0x138e29f7804Bfe8225E431c79764663620AEac54",
   input_and_proof_format: "0x43F4159c011f6d05957182748C1F2b77C74fFDB5",
   tee_verifier_deployer: "0x5acCC2F599045D13EA03e4c2b7b0Ed9F8C7Fb99C",
-  generatorEnclave: {
-    url: "http://3.109.54.190:5000",
-    utilityUrl: "http://3.109.54.190:1500"
-  },
-  ivsEnclave: {
-    url: "http://not deployed yet:5000",
-    utilityUrl: "http://not deployed yet:1500"
-  },
-  matchingEngineEnclave: {
-    url: "http://13.201.131.193:5000",
-    utilityUrl: "http://13.201.131.193:1500"
-  },
-  checkInputUrl: "http://not deployed yet:3030",
-  attestationVerifierEndPoint: "http://13.201.207.60:1400"
+  checkInputUrl: "http://localhost:3030/api/checkEncryptedInputs",
+  attestationVerifierEndPoint: "http://13.201.207.60:1400",
 };
 
 dotenv.config();
@@ -42,7 +31,7 @@ type createAskAndGetProofParams = {
 };
 
 const createAskAndGetProof = async (
-  createAskAndGetProofParams: createAskAndGetProofParams,
+  createAskAndGetProofParams: createAskAndGetProofParams
 ) => {
   try {
     if (
@@ -50,13 +39,13 @@ const createAskAndGetProof = async (
       process.env.PRIVATE_KEY == undefined
     ) {
       throw new Error(
-        "PRIVATE_KEY not found in the .env file. Please make sure to setup environment variables in your project.",
+        "PRIVATE_KEY not found in the .env file. Please make sure to setup environment variables in your project."
       );
     }
 
     if (process.env.RPC == null || process.env.RPC == undefined) {
       throw new Error(
-        "RPC not found in the .env file. Please make sure to setup environment variables in your project.",
+        "RPC not found in the .env file. Please make sure to setup environment variables in your project."
       );
     }
 
@@ -124,7 +113,7 @@ const createAskAndGetProof = async (
       await wallet.getAddress(),
       0, // TODO: keep this 0 for now
       Buffer.from(secretString),
-      false,
+      false
     );
     await askRequest.wait();
     console.log("Ask Request Hash: ", askRequest.hash);
@@ -146,7 +135,7 @@ const createAskAndGetProof = async (
             let abiCoder = new ethers.AbiCoder();
             const decoded = abiCoder.decode(
               ["bytes", "bytes", "bytes"],
-              data.proof,
+              data.proof
             );
 
             const inputs = decoded[0];
@@ -155,7 +144,7 @@ const createAskAndGetProof = async (
 
             console.log({ inputs, proof, signature });
 
-            const proofBuffer = Buffer.from(proof.split('0x')[1], "hex");
+            const proofBuffer = Buffer.from(proof.split("0x")[1], "hex");
             const decoder = new TextDecoder("utf-8");
             const proofString = decoder.decode(proofBuffer);
             console.log({ proofString });
@@ -211,12 +200,15 @@ const redisClient = new Redis({
   })(),
 });
 
-console.log("Redis running on port: ", process.env.REDIS_PORT)
+console.log("Redis running on port: ", process.env.REDIS_PORT);
 
 // Fetching parameters for Rate Limiting
-const rateLimitWindowSeconds = parseInt(process.env.RATE_LIMIT_WINDOW || '3600', 10); // 1 hour in seconds
-const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || '10', 10); // Max requests per window
-const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || '10', 10); // Delay between requests in seconds
+const rateLimitWindowSeconds = parseInt(
+  process.env.RATE_LIMIT_WINDOW || "3600",
+  10
+); // 1 hour in seconds
+const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || "10", 10); // Max requests per window
+const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || "10", 10); // Delay between requests in seconds
 
 // Rate Limiting and Throttling
 const checkRateLimitAndThrottle = async (signer: string) => {
@@ -226,16 +218,23 @@ const checkRateLimitAndThrottle = async (signer: string) => {
 
   // Request Throttling: Check if the last request was made within the throttle delay
   const lastRequestTime = await redisClient.get(lastRequestKey);
-  if (lastRequestTime && (currentTime - parseInt(lastRequestTime)) < throttleDelaySeconds * 1000) {
-    throw new Error('You are sending requests too quickly. Please wait for few seconds and try again.');
+  if (
+    lastRequestTime &&
+    currentTime - parseInt(lastRequestTime) < throttleDelaySeconds * 1000
+  ) {
+    throw new Error(
+      "You are sending requests too quickly. Please wait for few seconds and try again."
+    );
   }
 
   // Rate Limiting: Check the request count within the time window
   const rateLimitData = await redisClient.hgetall(rateLimitKey);
-  let requestCount = parseInt(rateLimitData.count || '0');
+  let requestCount = parseInt(rateLimitData.count || "0");
 
   if (requestCount >= maxRequestsPerWindow) {
-    throw new Error('You have exceeded the number of allowed requests per hour. Please try again later.');
+    throw new Error(
+      "You have exceeded the number of allowed requests per hour. Please try again later."
+    );
   }
 
   // Increment the request count since this request is valid
@@ -252,12 +251,99 @@ const checkRateLimitAndThrottle = async (signer: string) => {
   await redisClient.set(lastRequestKey, currentTime.toString());
 };
 
+export const proverEncryptedRequestTx = async (req: any, res: any) => {
+  await checkRateLimitAndThrottle("some identifier");
+
+  const publicInputs = req.body?.publicInputs as Uint8Array;
+  const encryptedSecret = req.body?.encryptedSecret as Uint8Array;
+  const acl = req.body?.acl as Uint8Array;
+
+  if (!publicInputs || !encryptedSecret || !acl) {
+    return res.status(400).send("Invalid input.");
+  }
+
+  const proof = await createEncryptedAskAndGetProof({
+    publicInputs: Buffer.from(publicInputs),
+    encryptedSecret: Buffer.from(encryptedSecret),
+    acl: Buffer.from(acl),
+  });
+};
+
+const createEncryptedAskAndGetProof = async (
+  data: PublicAndSecretInputPair
+) => {
+  const provider = new ethers.JsonRpcProvider(process.env.RPC);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as any, provider);
+
+  const kalypso = new KalypsoSdk(wallet, kalypsoConfig);
+
+  const isValid = await kalypso.MarketPlace().verifyEncryptedInputs(data, "19");
+
+  if (isValid) {
+    const askRequest = await kalypso
+      .MarketPlace()
+      .createAskWithEncryptedSecretAndAcl(
+        "19",
+        data.publicInputs,
+        "1000", //reward
+        "10000000000", // assignmentDeadline.toFixed(0),
+        "12391232342323", // proofGenerationTimeInBlocks.toFixed(0),
+        await wallet.getAddress(),
+        0, // TODO: keep this 0 for now
+        data.encryptedSecret,
+        data.acl
+      );
+
+    await askRequest.wait();
+    console.log("Ask Request Hash: ", askRequest.hash);
+
+    let receipt = await provider.getTransactionReceipt(askRequest.hash);
+
+    let askId = await kalypso.MarketPlace().getAskId(receipt!);
+    console.log("Ask ID :", askId);
+
+    if (askId) {
+      return await new Promise((resolve) => {
+        console.log("\nTrying to fetch proof...\n");
+        let intervalId = setInterval(async () => {
+          let data = await kalypso
+            .MarketPlace()
+            .getProofByAskId(askId.toString(), receipt?.blockNumber || 0);
+          if (data?.proof_generated) {
+            console.log(data.message);
+            let abiCoder = new ethers.AbiCoder();
+            const decoded = abiCoder.decode(
+              ["bytes", "bytes", "bytes"],
+              data.proof
+            );
+
+            const inputs = decoded[0];
+            const proof = decoded[1];
+            const signature = decoded[2];
+
+            console.log({ inputs, proof, signature });
+
+            const proofBuffer = Buffer.from(proof.split("0x")[1], "hex");
+            const decoder = new TextDecoder("utf-8");
+            const proofString = decoder.decode(proofBuffer);
+            console.log({ proofString });
+            resolve(proofString);
+            clearInterval(intervalId);
+          } else {
+            console.log(`Proof not submitted yet for askId : ${askId}.`);
+          }
+        }, 10000);
+      });
+    }
+  }
+};
+
 // Generate Proof for the public and secret input
 export const proveTransaction = async (req: any, res: any) => {
   try {
     const signer = req.body?.secret?.auth?.requests?.[0]?.signer;
     if (!signer) {
-      return res.status(400).send('Signer is required.');
+      return res.status(400).send("Signer is required.");
     }
 
     // Check rate limits and throttle requests
@@ -267,7 +353,7 @@ export const proveTransaction = async (req: any, res: any) => {
     const secretInput = req.body?.secret;
 
     if (!publicInput || !secretInput) {
-      return res.status(400).send('Invalid input.');
+      return res.status(400).send("Invalid input.");
     }
 
     const proof = await createAskAndGetProof({
@@ -279,17 +365,68 @@ export const proveTransaction = async (req: any, res: any) => {
   } catch (error) {
     // Error handling
     if (error instanceof Error) {
-      console.error('Error:', error.message);
-      if (error.message === 'You are sending requests too quickly. Please wait for few seconds and try again.' ||
-        error.message === 'You have exceeded the number of allowed requests per hour. Please try again later.') {
+      console.error("Error:", error.message);
+      if (
+        error.message ===
+          "You are sending requests too quickly. Please wait for few seconds and try again." ||
+        error.message ===
+          "You have exceeded the number of allowed requests per hour. Please try again later."
+      ) {
         res.status(429).send(error.message);
       } else {
-        res.status(500).send('Internal Server Error');
+        res.status(500).send("Internal Server Error");
       }
     } else {
       // Handle non-Error types
-      console.error('Unexpected error:', error);
-      res.status(500).send('Internal Server Error');
+      console.error("Unexpected error:", error);
+      res.status(500).send("Internal Server Error");
     }
   }
 };
+
+// Define the CheckInputResponse interface
+interface CheckInputResponse {
+  valid: boolean;
+}
+// Define the EncryptedInputPayload interface
+interface EncryptedInputPayload {
+  acl: Uint8Array;
+  public_inputs?: Uint8Array;
+  encrypted_secrets: Uint8Array;
+  me_decryption_url: string;
+  market_id: string;
+}
+
+// Function to make the POST request using fetch
+async function postToIvsUrl(
+  ivs_url: string,
+  data: EncryptedInputPayload
+): Promise<boolean> {
+  try {
+    const response = await fetch(ivs_url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      console.error("Network response was not ok");
+      return false;
+    }
+
+    const responseData = (await response.json()) as CheckInputResponse;
+
+    // Check if the response is valid
+    if (responseData && typeof responseData.valid === "boolean") {
+      return responseData.valid;
+    } else {
+      // If the response structure doesn't match, treat it as false
+      return false;
+    }
+  } catch (error) {
+    console.error("Error making POST request:", error);
+    return false;
+  }
+}
