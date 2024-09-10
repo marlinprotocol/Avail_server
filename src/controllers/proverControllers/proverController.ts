@@ -23,6 +23,8 @@ const kalypsoConfig = {
   attestationVerifierEndPoint: "http://13.201.207.60:1400",
 };
 
+const me_url = process.env.MATCHING_ENGINE_URL as string;
+
 dotenv.config();
 
 type createAskAndGetProofParams = {
@@ -267,6 +269,8 @@ export const proverEncryptedRequestTx = async (req: any, res: any) => {
     encryptedSecret: Buffer.from(encryptedSecret),
     acl: Buffer.from(acl),
   });
+
+  res.status(200).send(proof);
 };
 
 const createEncryptedAskAndGetProof = async (
@@ -277,7 +281,7 @@ const createEncryptedAskAndGetProof = async (
 
   const kalypso = new KalypsoSdk(wallet, kalypsoConfig);
 
-  const isValid = await kalypso.MarketPlace().verifyEncryptedInputs(data, "19");
+  const isValid = await kalypso.MarketPlace().verifyEncryptedInputs(data, me_url, "19");
 
   if (isValid) {
     const askRequest = await kalypso
@@ -395,38 +399,4 @@ interface EncryptedInputPayload {
   encrypted_secrets: Uint8Array;
   me_decryption_url: string;
   market_id: string;
-}
-
-// Function to make the POST request using fetch
-async function postToIvsUrl(
-  ivs_url: string,
-  data: EncryptedInputPayload
-): Promise<boolean> {
-  try {
-    const response = await fetch(ivs_url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      console.error("Network response was not ok");
-      return false;
-    }
-
-    const responseData = (await response.json()) as CheckInputResponse;
-
-    // Check if the response is valid
-    if (responseData && typeof responseData.valid === "boolean") {
-      return responseData.valid;
-    } else {
-      // If the response structure doesn't match, treat it as false
-      return false;
-    }
-  } catch (error) {
-    console.error("Error making POST request:", error);
-    return false;
-  }
 }

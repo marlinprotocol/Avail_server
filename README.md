@@ -1,6 +1,6 @@
 # kalypso-server
 
-##### .env file :
+## .env file :
 
 ```
 # Utils
@@ -11,6 +11,7 @@ API_KEY=$2a$12$pDBhELXDyqW3CQj9PUvTTuITUjNAn61Y7UNlrWfcmrbJZfwko7Dxu
 SERVER_MODE=DEV  #There are two options, DEV and PROD, using PROD enables API key authentication.
 PROOF_REWARD=14500000000000000000
 MARKET_ID=19 #Market used for avail proof generation
+MATCHING_ENGINE_URL="http://get_from_dev"
 
 # Redis configuration
 REDIS_HOST=127.0.0.1         # localhost
@@ -25,7 +26,7 @@ THROTTLE_DELAY=10                 # 10 seconds delay between requests
 
 `Note : If (PROD) SERVER_MODE is provided, please provide a (api-key) in the request headers.`
 
-#### Start the server
+## Start the server
 
 ```
 npm start
@@ -33,15 +34,17 @@ npm start
 
 `Note : Need to run a redis server in the background.`
 
-#### Creating ask and getting execution
+## Creating ask and getting execution
+The proving requests to avail can be created in two methods. The first one involves sending `auth` as plain text to server, whereas second one involes send `auth` as encrypted inputs to the server.
 
-##### Method: POST
+
+### 1. Method: POST /proveTx
 
 ```
 http://localhost:3030/proveTx
 ```
 
-##### Body (raw)
+#### Body (raw)
 
 ```
 {
@@ -175,4 +178,46 @@ http://localhost:3030/proveTx
         }
     }
 }
+```
+
+### 2. Method: POST /proveEncryptedTx
+
+```
+http://localhost:3030/proveEncryptedTransaction
+```
+
+#### Body (raw)
+
+```
+{
+    "publicInputs" : Uint8Array[....],
+    "encryptedSecret: Uint8Array[....],
+    "acl" : Uint8Array[...]
+}
+```
+
+#### How to create encrypted request payload on client side. 
+On client side, you can generate the encrypted request directly
+
+```
+
+const matchingEngineKey = (
+   await kalypso.MarketPlace().readMePubKeyInContract()
+  ).toString();
+  // this value to fetched on go, or cached
+
+const secretString = JSON.stringify(secret);
+
+const encryptedRequestData = await MarketPlace.createEncryptedRequestData(
+    inputBytes,
+    Buffer.from(secretString),
+    marketId,
+    matchingEngineKey,
+  );
+
+const payload_to_server = {
+    publicInputs: new Uint8Array(encryptedRequestData.publicInputs),
+    encryptedSecret:  new Uint8Array(encryptedRequestData.encryptedSecret),
+    acl: new Uint8Array(encryptedRequestData.acl)
+  }
 ```
