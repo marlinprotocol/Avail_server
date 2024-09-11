@@ -1,6 +1,7 @@
 import config from './config'
 import { KalypsoSdk } from 'kalypso-sdk'
 import { ethers } from 'ethers'
+import BigNumber from 'bignumber.js'
 
 const provider = new ethers.JsonRpcProvider(config.RPC)
 const wallet = new ethers.Wallet(config.PRIVATE_KEY, provider)
@@ -26,7 +27,8 @@ const kalypsoConfig = {
 export const kalypso = new KalypsoSdk(wallet, kalypsoConfig)
 
 export const latestBlock = async (): Promise<string> => {
-  return (await provider.getBlockNumber()).toString()
+  const result = await provider.getBlockNumber()
+  return new BigNumber(result).toFixed(0)
 }
 
 export const walletAddress = async (): Promise<string> => {

@@ -22,7 +22,7 @@ const createAskAndGetProof = async (input: string, secret: string): Promise<stri
   const askRequest = await kalypso.MarketPlace().createAsk(
     config.MARKET_ID,
     inputBytes,
-    config.PROOF_REWARD,
+    config.PROOF_REWARD.toString(),
     assignmentDeadline.toFixed(0),
     proofGenerationTimeInBlocks.toFixed(0),
     await walletAddress(),
@@ -103,7 +103,7 @@ const createEncryptedAskAndGetProof = async (data: PublicAndSecretInputPair): Pr
   const askRequest = await kalypso.MarketPlace().createAskWithEncryptedSecretAndAcl(
     config.MARKET_ID.toString(),
     data.publicInputs,
-    config.PROOF_REWARD,
+    config.PROOF_REWARD.toString(),
     assignmentDeadline.toFixed(0),
     proofGenerationTimeInBlocks.toFixed(0),
     await walletAddress(),
