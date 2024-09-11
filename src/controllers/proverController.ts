@@ -3,7 +3,6 @@ import BigNumber from 'bignumber.js'
 import { PublicAndSecretInputPair } from 'kalypso-sdk/dist/types'
 
 import config from '../config'
-import { checkRateLimitAndThrottle } from '../middleware'
 
 import { Request, Response } from 'express'
 

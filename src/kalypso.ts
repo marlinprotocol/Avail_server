@@ -25,9 +25,17 @@ const kalypsoConfig = {
 
 export const kalypso = new KalypsoSdk(wallet, kalypsoConfig)
 
-export const latestBlock = provider.getBlockNumber
-export const walletAddress = wallet.getAddress
-export const getTransactionReceipt = provider.getTransactionReceipt
+export const latestBlock = async (): Promise<string> => {
+  return (await provider.getBlockNumber()).toString()
+}
+
+export const walletAddress = async (): Promise<string> => {
+  return await wallet.getAddress()
+}
+
+export const getTransactionReceipt = async (transactionHash: string): Promise<null | ethers.TransactionReceipt> => {
+  return await provider.getTransactionReceipt(transactionHash)
+}
 
 wallet.getAddress().then((data) => {
   console.log('using address: ', data)
