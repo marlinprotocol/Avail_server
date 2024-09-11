@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { prover_router } from './Prover/Prover'
+import { prover_router } from './Prover'
 
 export const app = express()
 app.use(cors())

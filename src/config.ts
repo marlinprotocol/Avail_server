@@ -36,9 +36,7 @@ if (!parsedEnv.success) {
     }
   })
 
-  throw new Error(
-    'Some environment variables are missing or invalid. Please check the log for details.'
-  )
+  throw new Error('Some environment variables are missing or invalid. Please check the log for details.')
 }
 
 const config = parsedEnv.data
