@@ -16,14 +16,14 @@ const kalypsoConfig = {
   staking_token: "0xdb69299dDE4A00c99b885D9f8748B2AeD1Fe4Ed4",
   mock_attestation_verifier: "0x1dC40628443D93eA82945a9206e0b527BA3EA028",
   attestation_verifier: "0x63EEf1576b477Aa60Bfd7300B2C85b887639Ac1b",
-  entity_registry: "0xFFf22f221B9dB47a43cA5c8f48f7915c7957539c",
-  generator_registry: "0xCf30295AfC4F12FfAC6EE96Da3607e7749881BA7",
-  dispute: "0x48b28BC18E9d9EcDFa7A2CF8b1DDa2668bC005b2",
-  proof_market_place: "0xBD3700b9e4292C4842e6CB87205192Fa96e8Ed05",
   transfer_verifier_wrapper: "0x30A5fFf0D0d54fab407a409467835e56830a7471",
   zkb_verifier_wrapper: "0xeE89C22838a691d03fB3b6f47C387d06917C0bBD",
-  priority_list: "0x138e29f7804Bfe8225E431c79764663620AEac54",
-  input_and_proof_format: "0x43F4159c011f6d05957182748C1F2b77C74fFDB5",
+  entity_registry: "0x002064F4d224EA4F90e9A74B5fE3f3812886c6DF",
+  generator_registry: "0x5ce3e1010028C4F5687356D721e3e2B6DcEA7C25",
+  dispute: "0x41fD92A4Bc74F8B9f46e1fA0825C40aeD5AFDb92",
+  proof_market_place: "0x0b6340a893B944BDc3B4F012e934b724c83abF97",
+  priority_list: "0xfd94a9Aed9d5f8f00b70A1908378fcc1C4a04B4E",
+  input_and_proof_format: "0xBcBaccBA21D0F2089029a3184BcB612e5aFF7911",
   tee_verifier_deployer: "0x5acCC2F599045D13EA03e4c2b7b0Ed9F8C7Fb99C",
   checkInputUrl,
   attestationVerifierEndPoint: "http://13.201.207.60:1400",
@@ -35,7 +35,7 @@ type createAskAndGetProofParams = {
 };
 
 const createAskAndGetProof = async (
-  createAskAndGetProofParams: createAskAndGetProofParams,
+  createAskAndGetProofParams: createAskAndGetProofParams
 ) => {
   try {
     if (
@@ -43,13 +43,13 @@ const createAskAndGetProof = async (
       process.env.PRIVATE_KEY == undefined
     ) {
       throw new Error(
-        "PRIVATE_KEY not found in the .env file. Please make sure to setup environment variables in your project.",
+        "PRIVATE_KEY not found in the .env file. Please make sure to setup environment variables in your project."
       );
     }
 
     if (process.env.RPC == null || process.env.RPC == undefined) {
       throw new Error(
-        "RPC not found in the .env file. Please make sure to setup environment variables in your project.",
+        "RPC not found in the .env file. Please make sure to setup environment variables in your project."
       );
     }
 
@@ -117,7 +117,7 @@ const createAskAndGetProof = async (
       await wallet.getAddress(),
       0, // TODO: keep this 0 for now
       Buffer.from(secretString),
-      false,
+      false
     );
     await askRequest.wait();
     console.log("Ask Request Hash: ", askRequest.hash);
@@ -139,7 +139,7 @@ const createAskAndGetProof = async (
             let abiCoder = new ethers.AbiCoder();
             const decoded = abiCoder.decode(
               ["bytes", "bytes", "bytes"],
-              data.proof,
+              data.proof
             );
 
             const inputs = decoded[0];
@@ -181,7 +181,7 @@ const redisClient = new Redis({
   host: (() => {
     if (!process.env.REDIS_HOST) {
       throw new Error(
-        "REDIS_HOST not found in the .env file. Please make sure to set up environment variables in your project.",
+        "REDIS_HOST not found in the .env file. Please make sure to set up environment variables in your project."
       );
     }
     return process.env.REDIS_HOST;
@@ -189,7 +189,7 @@ const redisClient = new Redis({
   port: (() => {
     if (!process.env.REDIS_PORT) {
       throw new Error(
-        "REDIS_PORT not found in the .env file. Please make sure to set up environment variables in your project.",
+        "REDIS_PORT not found in the .env file. Please make sure to set up environment variables in your project."
       );
     }
     return parseInt(process.env.REDIS_PORT, 10);
@@ -197,7 +197,7 @@ const redisClient = new Redis({
   password: (() => {
     if (!process.env.REDIS_PASSWORD) {
       throw new Error(
-        "REDIS_PASSWORD not found in the .env file. Please make sure to set up environment variables in your project.",
+        "REDIS_PASSWORD not found in the .env file. Please make sure to set up environment variables in your project."
       );
     }
     return process.env.REDIS_PASSWORD;
@@ -209,7 +209,7 @@ console.log("Redis running on port: ", process.env.REDIS_PORT);
 // Fetching parameters for Rate Limiting
 const rateLimitWindowSeconds = parseInt(
   process.env.RATE_LIMIT_WINDOW || "3600",
-  10,
+  10
 ); // 1 hour in seconds
 const maxRequestsPerWindow = parseInt(process.env.MAX_REQUESTS || "10", 10); // Max requests per window
 const throttleDelaySeconds = parseInt(process.env.THROTTLE_DELAY || "10", 10); // Delay between requests in seconds
@@ -227,7 +227,7 @@ const checkRateLimitAndThrottle = async (signer: string) => {
     currentTime - parseInt(lastRequestTime) < throttleDelaySeconds * 1000
   ) {
     throw new Error(
-      "You are sending requests too quickly. Please wait for few seconds and try again.",
+      "You are sending requests too quickly. Please wait for few seconds and try again."
     );
   }
 
@@ -237,7 +237,7 @@ const checkRateLimitAndThrottle = async (signer: string) => {
 
   if (requestCount >= maxRequestsPerWindow) {
     throw new Error(
-      "You have exceeded the number of allowed requests per hour. Please try again later.",
+      "You have exceeded the number of allowed requests per hour. Please try again later."
     );
   }
 
@@ -259,10 +259,10 @@ export const proverEncryptedRequestTx = async (req: any, res: any) => {
   await checkRateLimitAndThrottle("some identifier");
 
   const publicInputs = new Uint8Array(
-    Object.values(req.body?.publicInputs || {}).map(Number),
+    Object.values(req.body?.publicInputs || {}).map(Number)
   );
   const encryptedSecret = new Uint8Array(
-    Object.values(req.body?.encryptedSecret || {}).map(Number),
+    Object.values(req.body?.encryptedSecret || {}).map(Number)
   );
   const acl = new Uint8Array(Object.values(req.body?.acl || {}).map(Number));
 
@@ -280,7 +280,7 @@ export const proverEncryptedRequestTx = async (req: any, res: any) => {
 };
 
 const createEncryptedAskAndGetProof = async (
-  data: PublicAndSecretInputPair,
+  data: PublicAndSecretInputPair
 ) => {
   const provider = new ethers.JsonRpcProvider(process.env.RPC);
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as any, provider);
@@ -303,7 +303,7 @@ const createEncryptedAskAndGetProof = async (
         await wallet.getAddress(),
         0, // TODO: keep this 0 for now
         data.encryptedSecret,
-        data.acl,
+        data.acl
       );
 
     await askRequest.wait();
@@ -326,7 +326,7 @@ const createEncryptedAskAndGetProof = async (
             let abiCoder = new ethers.AbiCoder();
             const decoded = abiCoder.decode(
               ["bytes", "bytes", "bytes"],
-              data.proof,
+              data.proof
             );
 
             const inputs = decoded[0];

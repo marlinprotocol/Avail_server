@@ -18,5 +18,5 @@ prover_router.post("/proveTx", validateApiSecret, proveTransaction);
 prover_router.post(
   "/proverEncryptedRequestTx",
   validateApiSecret,
-  proverEncryptedRequestTx,
+  proverEncryptedRequestTx
 );
