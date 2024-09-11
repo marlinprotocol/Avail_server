@@ -35,8 +35,8 @@ npm start
 `Note : Need to run a redis server in the background.`
 
 ## Creating ask and getting execution
-The proving requests to avail can be created in two methods. The first one involves sending `auth` as plain text to server, whereas second one involes send `auth` as encrypted inputs to the server.
 
+The proving requests to avail can be created in two methods. The first one involves sending `auth` as plain text to server, whereas second one involes send `auth` as encrypted inputs to the server.
 
 ### 1. Method: POST /proveTx
 
@@ -196,7 +196,8 @@ http://localhost:3030/proveEncryptedTransaction
 }
 ```
 
-#### How to create encrypted request payload on client side. 
+#### How to create encrypted request payload on client side.
+
 On client side, you can generate the encrypted request directly
 
 ```
