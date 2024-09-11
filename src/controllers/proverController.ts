@@ -84,6 +84,7 @@ export const proverEncryptedRequestTx = async (req: Request, res: Response) => {
     acl: Buffer.from(acl),
   }
 
+  // TODO: try to migrate this to middlewares
   const isValid = await kalypso
     .MarketPlace()
     .verifyEncryptedInputs(payload_for_verification, config.MATCHING_ENGINE_URL, config.MARKET_ID.toString())
