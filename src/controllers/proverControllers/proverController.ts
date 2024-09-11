@@ -308,7 +308,7 @@ const createEncryptedAskAndGetProof = async (
         data.acl
       );
 
-    await askRequest.wait();
+    await askRequest.wait(20);
     console.log("Ask Request Hash: ", askRequest.hash);
 
     let receipt = await provider.getTransactionReceipt(askRequest.hash);
