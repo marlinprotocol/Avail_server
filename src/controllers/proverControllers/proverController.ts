@@ -291,15 +291,17 @@ const createEncryptedAskAndGetProof = async (
     .MarketPlace()
     .verifyEncryptedInputs(data, me_url, marketId);
 
+  const reward = process.env.PROOF_REWARD as string;
+
   if (isValid) {
     const askRequest = await kalypso
       .MarketPlace()
       .createAskWithEncryptedSecretAndAcl(
         marketId,
         data.publicInputs,
-        "1000", //reward
-        "10000000000", // assignmentDeadline.toFixed(0),
-        "12391232342323", // proofGenerationTimeInBlocks.toFixed(0),
+        reward,
+        "1000000000000", // assignmentDeadline.toFixed(0),
+        "123912323423023", // proofGenerationTimeInBlocks.toFixed(0),
         await wallet.getAddress(),
         0, // TODO: keep this 0 for now
         data.encryptedSecret,
