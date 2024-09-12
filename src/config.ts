@@ -1,7 +1,7 @@
-import dotenv from 'dotenv'
-import { z } from 'zod'
+import dotenv from 'dotenv';
+import { z } from 'zod';
 
-dotenv.config()
+dotenv.config();
 
 const envSchema = z.object({
   RPC: z.string().url(),
@@ -21,24 +21,24 @@ const envSchema = z.object({
   THROTTLE_DELAY: z.coerce.number().default(10),
   ASSIGNMENT_DELAY: z.coerce.number().default(10000000000),
   PROOF_GENERATION_DELAY: z.number().default(10000000000),
-})
+});
 
-const parsedEnv = envSchema.safeParse(process.env)
+const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  const formattedErrors = parsedEnv.error.format()
+  const formattedErrors = parsedEnv.error.format();
 
   Object.entries(formattedErrors).forEach(([key, error]) => {
     if (Array.isArray(error)) {
-      console.error(`❌ Error for ${key}: ${error.join(', ')}`)
+      console.error(`❌ Error for ${key}: ${error.join(', ')}`);
     } else if (error && '_errors' in error) {
-      console.error(`❌ Error for ${key}: ${error._errors.join(', ')}`)
+      console.error(`❌ Error for ${key}: ${error._errors.join(', ')}`);
     }
-  })
+  });
 
-  throw new Error('Some environment variables are missing or invalid. Please check the log for details.')
+  throw new Error('Some environment variables are missing or invalid. Please check the log for details.');
 }
 
-const config = parsedEnv.data
+const config = parsedEnv.data;
 
-export default config
+export default config;

@@ -1,14 +1,14 @@
-import express from 'express'
-import { getVersion, proveTransaction, proverEncryptedRequestTx } from '../../controllers'
-import { checkRateLimitAndThrottle, validateApiSecret, validateProveTxPayload, encryptedSecretMiddlesWares } from '../../middleware'
+import express from 'express';
+import { getVersion, proveTransaction, proverEncryptedRequestTx } from '../../controllers';
+import { checkRateLimitAndThrottle, validateApiSecret, validateProveTxPayload, encryptedSecretMiddlesWares } from '../../middleware';
 
-export const prover_router = express.Router()
+export const prover_router = express.Router();
 
 //Version check
-prover_router.get('/version', validateApiSecret, getVersion)
+prover_router.get('/version', validateApiSecret, getVersion);
 
 //Prove Transaction public
-prover_router.post('/proveTx', validateApiSecret, validateProveTxPayload, checkRateLimitAndThrottle, proveTransaction)
+prover_router.post('/proveTx', validateApiSecret, validateProveTxPayload, checkRateLimitAndThrottle, proveTransaction);
 
 //Prove Encrypted Request Transaction public
 prover_router.post(
@@ -18,4 +18,4 @@ prover_router.post(
   checkRateLimitAndThrottle,
   encryptedSecretMiddlesWares.verifyEncryptedInputPayload,
   proverEncryptedRequestTx
-)
+);

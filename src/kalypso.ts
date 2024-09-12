@@ -1,10 +1,10 @@
-import config from './config'
-import { KalypsoSdk } from 'kalypso-sdk'
-import { ethers } from 'ethers'
-import BigNumber from 'bignumber.js'
+import config from './config';
+import { KalypsoSdk } from 'kalypso-sdk';
+import { ethers } from 'ethers';
+import BigNumber from 'bignumber.js';
 
-const provider = new ethers.JsonRpcProvider(config.RPC)
-const wallet = new ethers.Wallet(config.PRIVATE_KEY, provider)
+const provider = new ethers.JsonRpcProvider(config.RPC);
+const wallet = new ethers.Wallet(config.PRIVATE_KEY, provider);
 
 const kalypsoConfig = {
   payment_token: '0x01d84D33CC8636F83d2bb771e184cE57d8356863',
@@ -22,23 +22,23 @@ const kalypsoConfig = {
   tee_verifier_deployer: '0x5acCC2F599045D13EA03e4c2b7b0Ed9F8C7Fb99C',
   checkInputUrl: config.CHECK_INPUT_URL,
   attestationVerifierEndPoint: 'http://13.201.207.60:1400',
-}
+};
 
-export const kalypso = new KalypsoSdk(wallet, kalypsoConfig)
+export const kalypso = new KalypsoSdk(wallet, kalypsoConfig);
 
 export const latestBlock = async (): Promise<string> => {
-  const result = await provider.getBlockNumber()
-  return new BigNumber(result).toFixed(0)
-}
+  const result = await provider.getBlockNumber();
+  return new BigNumber(result).toFixed(0);
+};
 
 export const walletAddress = async (): Promise<string> => {
-  return await wallet.getAddress()
-}
+  return await wallet.getAddress();
+};
 
 export const getTransactionReceipt = async (transactionHash: string): Promise<null | ethers.TransactionReceipt> => {
-  return await provider.getTransactionReceipt(transactionHash)
-}
+  return await provider.getTransactionReceipt(transactionHash);
+};
 
 wallet.getAddress().then((data) => {
-  console.log('using address: ', data)
-})
+  console.log('using address: ', data);
+});

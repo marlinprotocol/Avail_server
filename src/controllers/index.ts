@@ -1,1 +1,1 @@
-export * from './proverController'
+export * from './proverController';

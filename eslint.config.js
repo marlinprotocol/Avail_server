@@ -1,6 +1,6 @@
 // eslint.config.js
-const { ESLint } = require('@typescript-eslint/parser')
-const tsEslintPlugin = require('@typescript-eslint/eslint-plugin')
+const { ESLint } = require('@typescript-eslint/parser');
+const tsEslintPlugin = require('@typescript-eslint/eslint-plugin');
 
 module.exports = [
   {
@@ -18,4 +18,4 @@ module.exports = [
       'no-console': 'warn',
     },
   },
-]
+];
