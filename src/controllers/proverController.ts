@@ -1,12 +1,13 @@
 import { ethers } from 'ethers'
 import BigNumber from 'bignumber.js'
 import { PublicAndSecretInputPair } from 'kalypso-sdk/dist/types'
+import { Request, Response } from 'express'
+import { Semaphore } from 'async-mutex'
 
 import config from '../config'
-
-import { Request, Response } from 'express'
-
 import { latestBlock, kalypso, walletAddress, getTransactionReceipt } from '../kalypso'
+
+const semaphore = new Semaphore(1)
 
 const createAskAndGetProof = async (input: string, secret: string): Promise<string> => {
   let abiCoder = new ethers.AbiCoder()
@@ -18,18 +19,27 @@ const createAskAndGetProof = async (input: string, secret: string): Promise<stri
   const assignmentDeadline = new BigNumber(await latestBlock()).plus(config.ASSIGNMENT_DELAY)
   const proofGenerationTimeInBlocks = new BigNumber(await latestBlock()).plus(config.PROOF_GENERATION_DELAY)
 
-  // Create ASK request
-  const askRequest = await kalypso.MarketPlace().createAsk(
-    config.MARKET_ID,
-    inputBytes,
-    config.PROOF_REWARD.toString(),
-    assignmentDeadline.toFixed(0),
-    proofGenerationTimeInBlocks.toFixed(0),
-    await walletAddress(),
-    0, // TODO: keep this 0 for now
-    Buffer.from(secretString),
-    false
-  )
+  semaphore.acquire()
+  let askRequest: ethers.ContractTransactionResponse
+  try {
+    // Create ASK request
+    askRequest = await kalypso.MarketPlace().createAsk(
+      config.MARKET_ID,
+      inputBytes,
+      config.PROOF_REWARD.toString(),
+      assignmentDeadline.toFixed(0),
+      proofGenerationTimeInBlocks.toFixed(0),
+      await walletAddress(),
+      0, // TODO: keep this 0 for now
+      Buffer.from(secretString),
+      false
+    )
+  } catch (ex) {
+    console.log(ex)
+    semaphore.release()
+    throw ex
+  }
+
   await askRequest.wait()
   console.log('Ask Request Hash: ', askRequest.hash)
 
@@ -83,17 +93,26 @@ const createEncryptedAskAndGetProof = async (data: PublicAndSecretInputPair): Pr
   const assignmentDeadline = new BigNumber(await latestBlock()).plus(config.ASSIGNMENT_DELAY)
   const proofGenerationTimeInBlocks = new BigNumber(await latestBlock()).plus(config.PROOF_GENERATION_DELAY)
 
-  const askRequest = await kalypso.MarketPlace().createAskWithEncryptedSecretAndAcl(
-    config.MARKET_ID.toString(),
-    data.publicInputs,
-    config.PROOF_REWARD.toString(),
-    assignmentDeadline.toFixed(0),
-    proofGenerationTimeInBlocks.toFixed(0),
-    await walletAddress(),
-    0, // TODO: keep this 0 for now
-    data.encryptedSecret,
-    data.acl
-  )
+  semaphore.acquire()
+  let askRequest: ethers.ContractTransactionResponse
+  try {
+    // Create ASK request
+    askRequest = await kalypso.MarketPlace().createAskWithEncryptedSecretAndAcl(
+      config.MARKET_ID.toString(),
+      data.publicInputs,
+      config.PROOF_REWARD.toString(),
+      assignmentDeadline.toFixed(0),
+      proofGenerationTimeInBlocks.toFixed(0),
+      await walletAddress(),
+      0, // TODO: keep this 0 for now
+      data.encryptedSecret,
+      data.acl
+    )
+  } catch (ex) {
+    console.log(ex)
+    semaphore.release()
+    throw ex
+  }
 
   await askRequest.wait(20)
   console.log('Ask Request Hash: ', askRequest.hash)
