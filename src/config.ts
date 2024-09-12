@@ -21,6 +21,7 @@ const envSchema = z.object({
   THROTTLE_DELAY: z.coerce.number().default(10),
   ASSIGNMENT_DELAY: z.coerce.number().default(10000000000),
   PROOF_GENERATION_DELAY: z.number().default(10000000000),
+  CONFIRMATIONS: z.number().default(30),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

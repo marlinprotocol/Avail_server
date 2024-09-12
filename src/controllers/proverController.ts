@@ -34,7 +34,7 @@ const createAskAndGetProof = async (input: string, secret: string): Promise<stri
       Buffer.from(secretString),
       false
     );
-    await askRequest.wait(10);
+    await askRequest.wait(config.CONFIRMATIONS);
     semaphore.release();
   } catch (ex) {
     console.log(ex);
@@ -109,7 +109,7 @@ const createEncryptedAskAndGetProof = async (data: PublicAndSecretInputPair): Pr
       data.encryptedSecret,
       data.acl
     );
-    await askRequest.wait(10);
+    await askRequest.wait(config.CONFIRMATIONS);
     semaphore.release();
   } catch (ex) {
     console.log(ex);
