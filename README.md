@@ -10,7 +10,7 @@ PORT=3030
 API_KEY=$2a$12$pDBhELXDyqW3CQj9PUvTTuITUjNAn61Y7UNlrWfcmrbJZfwko7Dxu
 SERVER_MODE=DEV  #There are two options, DEV and PROD, using PROD enables API key authentication.
 PROOF_REWARD=14500000000000000000
-MARKET_ID=19 #Market used for avail proof generation
+MARKET_ID=1 #Market used for avail proof generation
 MATCHING_ENGINE_URL="http://get_from_dev"
 
 # Redis configuration
