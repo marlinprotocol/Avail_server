@@ -19,7 +19,7 @@ const createAskAndGetProof = async (input: string, secret: string): Promise<stri
   const assignmentDeadline = new BigNumber(await latestBlock()).plus(config.ASSIGNMENT_DELAY);
   const proofGenerationTimeInBlocks = new BigNumber(await latestBlock()).plus(config.PROOF_GENERATION_DELAY);
 
-  semaphore.acquire();
+  await semaphore.acquire();
   let askRequest: ethers.ContractTransactionResponse;
   try {
     // Create ASK request
@@ -94,7 +94,7 @@ const createEncryptedAskAndGetProof = async (data: PublicAndSecretInputPair): Pr
   const assignmentDeadline = new BigNumber(await latestBlock()).plus(config.ASSIGNMENT_DELAY);
   const proofGenerationTimeInBlocks = new BigNumber(await latestBlock()).plus(config.PROOF_GENERATION_DELAY);
 
-  semaphore.acquire();
+  await semaphore.acquire();
   let askRequest: ethers.ContractTransactionResponse;
   try {
     // Create ASK request
