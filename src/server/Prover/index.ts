@@ -1,7 +1,6 @@
 import express from 'express'
 import { getVersion, proveTransaction, proverEncryptedRequestTx } from '../../controllers'
-import { checkRateLimitAndThrottle, validateApiSecret, validateProveTxPayload } from '../../middleware'
-import { validateProveEncryptedTxPayload } from '../../middleware/proveEncryptedTransactionPayloadCheck'
+import { checkRateLimitAndThrottle, validateApiSecret, validateProveTxPayload, encryptedSecretMiddlesWares } from '../../middleware'
 
 export const prover_router = express.Router()
 
@@ -15,7 +14,8 @@ prover_router.post('/proveTx', validateApiSecret, validateProveTxPayload, checkR
 prover_router.post(
   '/proverEncryptedRequestTx',
   validateApiSecret,
-  validateProveEncryptedTxPayload,
+  encryptedSecretMiddlesWares.validateProveEncryptedTxPayload,
   checkRateLimitAndThrottle,
+  encryptedSecretMiddlesWares.verifyEncryptedInputPayload,
   proverEncryptedRequestTx
 )

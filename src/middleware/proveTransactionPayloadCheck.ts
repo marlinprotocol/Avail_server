@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { Request, Response, NextFunction } from 'express'
 
 const proveTxSchema = z.object({
-  publicInput: z.any(), //TODO defgine the shape of the publicInput here
-  secretInput: z.any(), // TODO define the shape of secretInput here
+  public: z.any(), //TODO defgine the shape of the public here
+  secret: z.any(), // TODO define the shape of secret here
 })
 
 export const validateProveTxPayload = (req: Request, res: Response, next: NextFunction) => {
