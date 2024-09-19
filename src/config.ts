@@ -22,6 +22,7 @@ const envSchema = z.object({
   ASSIGNMENT_DELAY: z.coerce.number().default(10000000000),
   PROOF_GENERATION_DELAY: z.number().default(10000000000),
   CONFIRMATIONS: z.coerce.number().default(30),
+  APP_URL: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

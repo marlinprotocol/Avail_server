@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    env_file:
+      - .env
+    ports:
+      - '3000:8080' # Adjust the ports as needed
+    command: node ./dist/index.js
+    depends_on:
+      - redis
+    restart: unless-stopped
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    command: ['redis-server', '--requirepass', 'password']
+    restart: unless-stopped
