@@ -20,7 +20,7 @@ services:
     image: redis:latest
     container_name: redis-server
     command: ['redis-server', '--requirepass', 'password']
-    
+
   bot:
     build:
       context: .
@@ -81,4 +81,3 @@ services:
         condition: on-failure
         delay: 60s
         max_attempts: 0
-    

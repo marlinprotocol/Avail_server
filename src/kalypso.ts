@@ -26,13 +26,32 @@ const kalypsoConfig = {
 
 export const kalypso = new KalypsoSdk(wallet, kalypsoConfig);
 
+let cachedBlock: string | null = null;
+let lastRequestTime: number | null = null;
+const cacheDuration = 60 * 1000;
+
 export const latestBlock = async (): Promise<string> => {
+  const currentTime = Date.now();
+
+  if (cachedBlock && lastRequestTime && currentTime - lastRequestTime < cacheDuration) {
+    return cachedBlock;
+  }
+
   const result = await provider.getBlockNumber();
-  return new BigNumber(result).toFixed(0);
+  cachedBlock = new BigNumber(result).toFixed(0);
+  lastRequestTime = currentTime;
+
+  return cachedBlock;
 };
 
+let cachedWalletAddress: string | null = null;
 export const walletAddress = async (): Promise<string> => {
-  return await wallet.getAddress();
+  if (!cachedWalletAddress) {
+    const wa = await wallet.getAddress();
+    cachedWalletAddress = wa;
+  }
+
+  return cachedWalletAddress;
 };
 
 export const getTransactionReceipt = async (transactionHash: string): Promise<null | ethers.TransactionReceipt> => {
