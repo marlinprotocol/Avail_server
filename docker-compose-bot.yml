@@ -26,3 +26,23 @@ services:
     depends_on:
       - app
     restart: unless-stopped
+  bot2:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    env_file:
+      - .env
+    command: node ./dist/bot.js
+    depends_on:
+      - app
+    restart: unless-stopped
+  bot3:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    env_file:
+      - .env
+    command: node ./dist/bot.js
+    depends_on:
+      - app
+    restart: unless-stopped
