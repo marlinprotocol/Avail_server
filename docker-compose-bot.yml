@@ -10,12 +10,17 @@ services:
     command: node ./dist/index.js
     depends_on:
       - redis
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 0
   redis:
     image: redis:latest
     container_name: redis-server
     command: ['redis-server', '--requirepass', 'password']
-    restart: unless-stopped
+    
   bot:
     build:
       context: .
@@ -25,7 +30,12 @@ services:
     command: node ./dist/bot.js
     depends_on:
       - app
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 0
   bot2:
     build:
       context: .
@@ -35,7 +45,12 @@ services:
     command: node ./dist/bot.js
     depends_on:
       - app
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 0
   bot3:
     build:
       context: .
@@ -45,4 +60,25 @@ services:
     command: node ./dist/bot.js
     depends_on:
       - app
-    restart: unless-stopped
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 0
+  bot4:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    env_file:
+      - .env
+    command: node ./dist/bot.js
+    depends_on:
+      - app
+    restart: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 0
+    
